@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "repositoryId": "synthetiq-official-modules",
+  "name": "Synthetiq Anime Modules",
+  "enabled": true,
+  "publishedAtMs": 1784986932868,
+  "bundle": {
+    "version": 164,
+    "minAppVersion": "8.0.0",
+    "packageUrl": "https://github.com/kas021/Synthetiq-Modules/releases/download/bundle-164/Synthetiq-Module-Bundle-164.zip",
+    "packagePath": "/kas021/Synthetiq-Modules/releases/download/bundle-164/Synthetiq-Module-Bundle-164.zip",
+    "sha256": "66476779ef434a634682d6c48224bbcb5437787a349a76a7873149e46baf34f0",
+    "signature": "YruwIKRilp3wchRgyNBQpEV4ClLORE/CYrYycrlmGzBMT3LS+7OXb+VA1YrJmF4jN/npZC2dvCnFJ45kWRbxYA=="
+  },
+  "modules": [
+    {
+      "moduleId": "anikoto-v4",
+      "moduleFamilyId": "anikoto-v3",
+      "moduleIdentity": "SP-VID-036-ANIKOTO",
+      "moduleIdentityNumber": 36,
+      "contentType": "video",
+      "version": "5.0.6-beta.3",
+      "minAppVersion": "8.0.0",
+      "packageUrl": "modules/AniKoto-5.0.6-beta.3.zip",
+      "packagePath": "/kas021/Synthetiq-Modules/releases/download/module-anikoto-v4-v5.0.6-beta.3/AniKoto-5.0.6-beta.3.zip",
+      "sha256": "beba10a44fa76dcfb09b177f4d647ffa44a2ad27db93dda9c839a754bda9f78a",
+      "signature": "YPoh+DzsFR1ZzU4rMFS/PH8Yh3TmYOaMQ/w98yobK9KEUPZa2bCmGSDBDJkcva45xe0HNkAvvXMvzFCECP7Rvg==",
+      "publishedAtMs": 1784986932868,
+      "changelog": [
+        "5.0.6-beta.3: Faster cached lookups with verified embed IDs, provider-scoped caches, safer fallback language checks and preserved external audio/subtitle playlists. Stops returning unrelated videos when embed metadata is unavailable. Owner-approved LIVE BETA: sampled media, runtime and regression checks passed; full certification and native phone acceptance remain pending. S2 retains the same opening-language detector flag observed on the previous live build. Existing source availability and backup-only-Dub limitations remain.",
+        "5.0.5-beta.7: Updates provider response and token handling, same-episode/audio checks and Retry-After handling. Experimental owner-requested live-test release: repeated-open failures and source/DNS availability remain unresolved. Do not treat this as a certified reopen fix.",
+        "5.0.5-beta.2: Restores stream resolution on the current rescue CDN routes (Sub and Dub). Fixes titles failing to load on the released app by raising the in-app probe budget (2MB to 4MB), extending the resolution deadline (3s to 5s), accepting size-capped reachability, and preferring routes without player-broken segment names. Subtitle tracks unchanged; verified on the released app runtime and S2.",
+        "5.0.4-beta.4: Fixed random skipping during playback (disguised .html segments mapped and served as genuine MPEG-TS video/mp2t). AES-CBC player stream descriptor decrypt support, improved fallback rate-limit handling, and normalized subtitle language tags.",
+        "5.0.4-beta.3: Vidhawk-independent AniKage rescue chain (labelled; used only when the primary has no verified media), MegaPlay descriptor decrypt fix, MAL-keyed rescue lookups, subtitle language tags. Fixes titles that went dark during the Vidhawk media-relay outage.",
+        "5.0.4-beta.3: Rescue routes pass the same positive media validation as primary routes and are never substituted across languages; episodes the rescue chain does not carry remain unavailable with an honest message."
+      ],
+      "presentation": {
+        "category": "Anime",
+        "purpose": "Anime",
+        "recommended": true,
+        "language": "English Sub/Dub",
+        "iconUrl": "https://raw.githubusercontent.com/kas021/Synthetiq-Modules/main/assets/module-icons/anikoto.png?v=20260812-2"
+      },
+      "packageSizeBytes": 23100
+    },
+    {
+      "moduleId": "anikage-v1",
+      "moduleFamilyId": "anikage_v1",
+      "moduleIdentity": "SP-VID-063-ANIKAGE",
+      "moduleIdentityNumber": 63,
+      "contentType": "video",
+      "version": "1.1.3",
+      "minAppVersion": "8.0.0",
+      "packageUrl": "modules/Anikage-1.1.3.zip",
+      "packagePath": "/kas021/Synthetiq-Modules/releases/download/module-anikage-v1-v1.1.3/Anikage-1.1.3.zip",
+      "sha256": "70002c6570c46129d00e71c9cf623f7b44bc2ddea2cb559933b10ede1554fff4",
+      "signature": "EStBFmUmBFNmytXdlODjSupvWRl/SPuLP6HT4Mzkz+fD/713AJUY3lGTgO79Y+1l/XbdgzmpUB9Sg6wno9Atvg==",
+      "publishedAtMs": 1784986932868,
+      "changelog": [
+        "1.1.3: Playback restored. The source now hands back an opaque token instead of a direct URL and the module discarded it as \"not a URL\", so every provider looked dead. Tokens are expanded through the source's own proxy now, the live providers (wave/koto/megg) are tried first, and quality labels come from the stream itself (720p/360p) instead of a bare Auto. Verified on the exact bytes: release gate ALL_PASSED.",
+        "1.1.2: Owner-approved public release \u2014 restored playback: the player host shipped an encrypted stream descriptor (now decrypted in-module, cross-verified), and segments are classified by bytes (the CDN serves real video behind .jpg/webp labels) instead of content-type.",
+        "1.1.2: Resolution/validation caches and request dedupe keep normal browsing inside the source's request budget; verified live \u2014 streams resolve, zero 429s, app-runtime playback passes.",
+        "1.1.1: Owner-approved distribution of the unchanged testing package. Retains its beta label; not fully certified.",
+        "1.1.1: Checked server alternatives, recovered source-provided subtitle links and marker metadata where available; stop provider cascades during rate limits.",
+        "1.1.1: Long-distance seeks and downloads may remain slow. Some episodes fail resolution or decoding; audio-language and native seek certification remain incomplete. No app-code changes.",
+        "1.0.4: Added direct Otaku/Vidplay/Playmogo p.a.c.k.e.r embed deobfuscator & direct 1080p CDN HLS resolver with segment validation, fixing playback on Tower of God and other series",
+        "1.0.3: Prioritized Neko 1080p Backblaze B2 streams with live segment range probe validation",
+        "1.0.2: Built-in automatic HTTP 429 exponential backoff retry engine for flawless rapid browsing",
+        "1.0.1: Optimized browser session headers and Referer routing to prevent rate-limiting",
+        "1.0.1: Added full Contract V4 discoveryHome and extractHome exports for discovery carousels",
+        "1.0.1: Multi-provider failover across koto, kiwi, neko, wave, and megg stream hosts",
+        "1.0.0: Official Anikage (anikage.cc) comprehensive anime streaming catalogue with adaptive HD HLS resolution"
+      ],
+      "presentation": {
+        "category": "Anime",
+        "purpose": "English Anime (SUB / DUB)",
+        "recommended": true,
+        "language": "English Sub/Dub",
+        "iconUrl": "https://raw.githubusercontent.com/kas021/Synthetiq-Modules/main/assets/module-icons/anikage.png"
+      },
+      "packageSizeBytes": 13122
+    },
+    {
+      "moduleId": "miruro-v3",
+      "moduleFamilyId": "miruro",
+      "moduleIdentity": "SP-VID-010-MIRURO",
+      "moduleIdentityNumber": 10,
+      "contentType": "video",
+      "version": "4.1.3-beta.7",
+      "minAppVersion": "8.0.0",
+      "packageUrl": "modules/Miruro-4.1.3-beta.7.zip",
+      "packagePath": "/kas021/Synthetiq-Modules/releases/download/module-miruro-v3-v4.1.3-beta.7/Miruro-4.1.3-beta.7.zip",
+      "sha256": "cb33fcf9d073461e1b604facec3807bfe37440e58547d868776d718fec5a40ee",
+      "signature": "5oFcLZHXn0/y24yuytifMHOcwSyTPSBcOaYI5Bk06A19tkYASKTw+b10rO7BJpXOo5/vgAKkvXY/U6xq1dtOuA==",
+      "publishedAtMs": 1784986932868,
+      "changelog": [
+        "4.1.3-beta.7: Repairs current embed extraction and refreshes links on reopen/retry; updates the Miruro domain; adds explicit season/part matching guards and stops listing invented playable episodes when the source has none. Owner-approved limited update: sampled media/runtime checks passed; complex aliases remain best-effort, and simulator, physical-device, full-episode and subtitle acceptance remain unverified.",
+        "4.1.2: Fixed Re:ZERO search and episode mapping collision with Jujutsu Kaisen using Dice token similarity and season isolation",
+        "4.1.2: Added query relevance re-ranking across AniList and Kitsu to prioritize exact series matches over spinoffs and commercials",
+        "4.1.2: Resilient multi-provider stream pipeline supporting both direct MP4 and HLS video segments with in-memory stream caching",
+        "4.1.2: Robust Kitsu fallback search when AniList is degraded or rate-limited",
+        "4.1.0: Owner-approved beta.1 source unchanged; no silent Dub-to-Sub fallback, fresh retry links and exact episode lookup.",
+        "4.0.1: Preserve the correct HLS or MP4 type and required headers for each resolved stream"
+      ],
+      "presentation": {
+        "category": "Anime",
+        "purpose": "Anime",
+        "language": "English Sub/Dub",
+        "iconUrl": "https://raw.githubusercontent.com/kas021/Synthetiq-Modules/main/assets/module-icons/miruro.png"
+      },
+      "packageSizeBytes": 11318
+    },
+    {
+      "moduleId": "kickassanime-v3",
+      "moduleFamilyId": "kickassanime-v3",
+      "moduleIdentity": "SP-VID-038-KICKASSANIME",
+      "moduleIdentityNumber": 38,
+      "contentType": "video",
+      "version": "4.2.0",
+      "minAppVersion": "8.0.0",
+      "packageUrl": "modules/KickAssAnime-4.2.0.zip",
+      "packagePath": "/kas021/Synthetiq-Modules/releases/download/module-kickassanime-v3-v4.2.0/KickAssAnime-4.2.0.zip",
+      "sha256": "4f31c3cd519a37ecf552e838f6d4e3b41fa72e8ab91f5489ff8c326b4bc8748f",
+      "signature": "5oz9rtqX1VHYD4U5xHgXjV+pMoMG6qZcv9ACBwCHEkbTnfcxetM0037aCuUhR6X63P1cSpOHfLfaYbmtyYIlHA==",
+      "publishedAtMs": 1784986932868,
+      "changelog": [
+        "4.2.0: Search now finds titles the way users type them - generated punctuation variants (colon at any word boundary, 'dr.' forms, year parentheses, tail-tokens fallback) plus merged results take the natural-query hit rate to 24/24 (was 22/24) and a season-qualified hard set from 2/8 to 8/8. Season/part variants of a show are grouped and ordered (base, Cour/Part, Season 2, 3..., then specials/OVAs/movies) with release years on cards. The home now serves 6 rows (adds Recently Added, Popular Shows and Coming Soon) in one parallel fan-out. Module icon added.",
+        "4.1.0: Correct provider subtitle language labels, including wrapped metadata; unknown tracks are no longer labelled English",
+        "4.1.0: Expose usable server alternatives with matching captions and headers; preserve audio-safe Auto quality",
+        "4.1.0: Bounded primary recovery and alternate episode-page fallback; 25/30 sampled titles passed media probes, known unavailable titles documented",
+        "4.0.3: Official KickAssAnime (kaa.lt) English sub/dub catalogue",
+        "4.0.3: DUB is only shown when an English player or English HLS audio track exists",
+        "4.0.3: Japanese-only CatStream is never labeled as DUB (One Piece is SUB-only)",
+        "4.0.2: Featured home row, season duplicate collapse, subtitle URL repair",
+        "4.0.1: Full episode lists via fsearch and ja-JP/en-US APIs"
+      ],
+      "presentation": {
+        "category": "Anime",
+        "purpose": "English Anime",
+        "language": "English Sub/Dub",
+        "iconUrl": "https://raw.githubusercontent.com/kas021/Synthetiq-Modules/main/assets/module-icons/kickassanime.png?v=20261008-1"
+      },
+      "packageSizeBytes": 15954
+    },
+    {
+      "moduleId": "justanime-v1",
+      "moduleFamilyId": "justanime_v1",
+      "moduleIdentity": "SP-VID-064-JUSTANIME",
+      "moduleIdentityNumber": 64,
+      "contentType": "video",
+      "version": "1.0.1",
+      "minAppVersion": "8.0.0",
+      "packageUrl": "modules/JustAnime-1.0.1.zip",
+      "packagePath": "/kas021/Synthetiq-Modules/releases/download/module-justanime-v1-v1.0.1/JustAnime-1.0.1.zip",
+      "sha256": "06003ab11823ac9862b18406bda358dbfdb46886e0dda1626a0d73aecfd2bb70",
+      "signature": "5LLt2GgH1aG8bcWr76KRTGKiuBEUlPkh2KM4p8ZgmXxcE3ZK65uMnGrim+KAL5gm8f66L2g3ROuJAndFEnI3zA==",
+      "publishedAtMs": 1784986932868,
+      "changelog": [
+        "1.0.1: Owner-approved public release \u2014 implemented the advertised discovery home (hero + Trending/Popular/Airing/Latest rows with feed pages) and fixed home cards missing artwork.",
+        "1.0.0: Official JustAnime (justanime.to) comprehensive anime streaming catalogue with high-speed direct MP4 and HLS video playback",
+        "1.0.0: Dual audio synchronization for SUB and DUB tracks across multiple resolvers (AnimeGG, AniNeko, MegaPlay)",
+        "1.0.0: AniList metadata integration, rich synopsis, episode descriptions, and thumbnails",
+        "1.0.0: Complete WebVTT subtitle tracks and chapter skip markers",
+        "1.0.0: Discovery feeds for Trending, Popular, and Recent anime releases"
+      ],
+      "presentation": {
+        "category": "Anime",
+        "purpose": "English Anime (SUB / DUB)",
+        "language": "English Sub/Dub",
+        "iconUrl": "https://raw.githubusercontent.com/kas021/Synthetiq-Modules/main/assets/module-icons/justanime.png"
+      },
+      "packageSizeBytes": 5532
+    }
+  ],
+  "defaultModules": {
+    "video": "anikage-v1"
+  },
+  "defaultModulesSignature": "uHUopToPMiSsvJAEmhgFDAVEDtpYHs6MppE/f8e+DB8QSNQMpKlXnKxJqXBBe6GqAuz2aLyDx6uyU6itWSWwnw==",
+  "signature": "z8gZi/GoGcf9AAVxuB4gCcuFOxODBiBkyz+HcYRKnZs3wp+WXl+VIknOFD91W5EzTbHhNo3ytNQ4qFvegZ9D2g==",
+  "totalModules": 5,
+  "updatedAt": "2026-10-15T08:14:26.182Z"
+}
