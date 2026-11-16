@@ -274,75 +274,130 @@
       return true;
     }
 
-    // 1. Try AniNeko resolver (HLS with subtitles)
-    try {
-      const nkData = await requestJson(BASE_URL + '/watch/' + animeId + '/episode/' + epNum + '/anineko/' + targetLang);
-      const sources = (nkData && Array.isArray(nkData.sources) ? nkData.sources : []).filter(isHlsStreamSource);
-
-      if (sources.length > 0) {
-        const bestSource = sources[0];
-        if (bestSource && bestSource.url) {
-          const subtitles = (nkData.subtitles || []).map((sub) => ({
-            url: sub.url,
-            lang: sub.lang || 'English',
-            label: sub.lang || 'English',
-            default: true,
-          }));
-
-          log('AniNeko HLS stream resolved: ' + bestSource.url);
-          return {
-            url: bestSource.url,
-            streamType: 'hls',
-            quality: bestSource.quality || 'auto',
-            headers: Object.assign({
-              'User-Agent': USER_AGENT,
-              'Referer': (nkData.headers && nkData.headers.Referer) || 'https://otakuhg.site/',
-              'Origin': (nkData.headers && nkData.headers.Origin) || 'https://otakuhg.site',
-            }, nkData.headers || {}),
-            subtitles: subtitles,
-          };
-        }
-      }
-    } catch (err) {
-      log('AniNeko resolver failed: ' + err.message);
+    function mapSubtitles(list) {
+      return (Array.isArray(list) ? list : [])
+        .filter((sub) => sub && (sub.file || sub.url))
+        .map((sub) => ({
+          url: sub.file || sub.url,
+          lang: sub.label || sub.lang || 'English',
+          label: sub.label || sub.lang || 'English',
+          default: Boolean(sub.default),
+        }));
     }
 
-    // 2. Try MegaPlay fallback (HLS)
-    try {
-      const mpData = await requestJson(BASE_URL + '/watch/' + animeId + '/episode/' + epNum + '/megaplay');
-      const langData = mpData[targetLang] || mpData.sub || mpData.dub || {};
-      const sources = (Array.isArray(langData.sources) ? langData.sources : []).filter(isHlsStreamSource);
+    function headersForStream(url, providerId, rawHeaders) {
+      const rh = rawHeaders && typeof rawHeaders === 'object' ? rawHeaders : null;
+      const rawRef = rh && (rh.Referer || rh.referer);
+      if (rawRef) {
+        return Object.assign({
+          'User-Agent': USER_AGENT,
+          'Referer': rawRef,
+        }, rh);
+      }
+      if (providerId === 'momo') {
+        return {
+          'User-Agent': USER_AGENT,
+          'Referer': 'https://megaplay.buzz/',
+        };
+      }
+      const target = String(url || '').toLowerCase();
+      if (target.includes('core.justanime.to')) {
+        return {
+          'User-Agent': USER_AGENT,
+          'Referer': SITE_URL + '/',
+          'Origin': SITE_URL,
+        };
+      }
+      return {
+        'User-Agent': USER_AGENT,
+        'Referer': SITE_URL + '/',
+      };
+    }
 
-      if (sources.length > 0) {
-        const bestSource = sources[0];
-        if (bestSource && bestSource.url) {
-          const subtitles = (langData.subtitles || []).map((sub) => ({
-            url: sub.file || sub.url,
-            lang: sub.label || 'English',
-            label: sub.label || 'English',
-            default: Boolean(sub.default),
-          }));
+    const providers = [
+      { id: 'momo', label: 'Momo' },
+      { id: 'onyx', label: 'Onyx' },
+      { id: 'calm', label: 'Calm' },
+      { id: 'revo', label: 'Revo' },
+    ];
 
-          log('MegaPlay HLS stream resolved: ' + bestSource.url);
+    const settled = await Promise.all(
+      providers.map(async (prov) => {
+        try {
+          const data = await requestJson(BASE_URL + '/watch/' + animeId + '/episode/' + epNum + '/' + prov.id);
+          if (!data || typeof data !== 'object') return null;
+          const langData = data[targetLang];
+          if (!langData || typeof langData !== 'object') return null;
+          const sources = (Array.isArray(langData.sources) ? langData.sources : []).filter(isHlsStreamSource);
+          if (!sources.length) return null;
           return {
-            url: bestSource.url,
-            streamType: 'hls',
-            quality: bestSource.quality || 'auto',
-            headers: {
-              'User-Agent': USER_AGENT,
-              'Referer': 'https://megaplay.buzz/',
-            },
-            subtitles: subtitles,
+            prov,
+            sources,
+            subtitles: mapSubtitles(langData.subtitles),
             intro: langData.intro || null,
             outro: langData.outro || null,
+            rawHeaders: langData.headers || null,
           };
+        } catch (_) {
+          return null;
         }
+      })
+    );
+
+    const serverRoutes = [];
+    const seenUrls = new Set();
+    let bestSubtitles = [];
+    let bestIntro = null;
+    let bestOutro = null;
+
+    for (const entry of settled) {
+      if (!entry) continue;
+      if (!bestSubtitles.length && entry.subtitles.length) bestSubtitles = entry.subtitles;
+      if (!bestIntro && entry.intro) bestIntro = entry.intro;
+      if (!bestOutro && entry.outro) bestOutro = entry.outro;
+
+      for (const src of entry.sources) {
+        const streamUrl = String(src.url || '').trim();
+        if (!streamUrl || seenUrls.has(streamUrl)) continue;
+        seenUrls.add(streamUrl);
+        const hdrs = headersForStream(streamUrl, entry.prov.id, entry.rawHeaders);
+        serverRoutes.push({
+          name: entry.prov.label + ' (HLS)',
+          label: entry.prov.label + ' (HLS)',
+          url: streamUrl,
+          quality: src.quality || 'auto',
+          streamType: 'hls',
+          headers: hdrs,
+          subtitles: entry.subtitles.length ? entry.subtitles : bestSubtitles,
+          intro: entry.intro || bestIntro,
+          outro: entry.outro || bestOutro,
+        });
       }
-    } catch (err) {
-      log('MegaPlay resolver failed: ' + err.message);
     }
 
-    throw new Error(MODULE_NAME + ': no playable HLS streams found for animeId=' + animeId + ', ep=' + epNum);
+    if (serverRoutes.length > 0) {
+      const primary = serverRoutes[0];
+      log('Resolved ' + serverRoutes.length + ' HLS route(s); primary=' + primary.name);
+      return {
+        url: primary.url,
+        streamType: 'hls',
+        quality: primary.quality || 'auto',
+        headers: primary.headers,
+        subtitles: primary.subtitles.length ? primary.subtitles : bestSubtitles,
+        intro: primary.intro || bestIntro,
+        outro: primary.outro || bestOutro,
+        servers: serverRoutes,
+        streams: serverRoutes.map((r) => ({
+          label: r.name,
+          url: r.url,
+          quality: r.quality,
+          streamType: 'hls',
+          headers: r.headers,
+        })),
+      };
+    }
+
+    throw new Error(MODULE_NAME + ': no playable ' + targetLang + ' HLS streams found for animeId=' + animeId + ', ep=' + epNum);
   }
 
   // ---------- extractHome (discovery_v1) ----------

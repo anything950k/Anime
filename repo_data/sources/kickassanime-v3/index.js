@@ -24,7 +24,7 @@
     'User-Agent': USER_AGENT,
     Referer: KRUSS_ORIGIN + '/',
     Origin: KRUSS_ORIGIN,
-    Accept: 'application/vnd.apple.mpegurl,application/x-mpegURL,video/mp4,*/*',
+    Accept: 'application/vnd.apple.mpegurl,application/x-mpegURL,*/*',
   };
 
   const searchResultCache = {};
@@ -699,10 +699,6 @@
       text.match(/https?:\/\/[^"'\s<>]+?\.m3u8(?:\?[^"'\s<>]*)?/i) ||
       text.match(/\/\/[a-z0-9.-]+\/[^"'\s<>]+?\.m3u8(?:\?[^"'\s<>]*)?/i);
     if (m3u8 && m3u8[0]) return { url: normalizeStreamUrl(m3u8[0]), streamType: 'hls' };
-    const mp4 =
-      text.match(/https?:\/\/[^"'\s<>]+?\.mp4(?:\?[^"'\s<>]*)?/i) ||
-      text.match(/\/\/[a-z0-9.-]+\/[^"'\s<>]+?\.mp4(?:\?[^"'\s<>]*)?/i);
-    if (mp4 && mp4[0]) return { url: normalizeStreamUrl(mp4[0]), streamType: 'mp4' };
     return null;
   }
 
@@ -788,26 +784,6 @@
       }
     }
     return false;
-  }
-
-  async function resolveRedirect(url, headers) {
-    const raw = String(url || '').trim();
-    if (!raw) return raw;
-    const res = await settleWithin(
-      request(raw, {
-        headers: Object.assign({}, headers || {}, { Range: 'bytes=0-1' }),
-        followRedirects: false,
-      }),
-      5000,
-      null,
-    );
-    if (!res) return raw;
-    const loc = (res.headers && (res.headers.location || res.headers.Location)) || '';
-    if (loc) return absoluteUrl(raw, loc);
-    if (res.finalUrl && /^https?:\/\//i.test(res.finalUrl) && res.finalUrl !== raw) {
-      return res.finalUrl;
-    }
-    return raw;
   }
 
   async function inspectMaster(url) {
@@ -897,24 +873,15 @@
       lastBody = res.body;
       picked = pickStreamFromHtml(res.body);
     }
-    if (!picked || !picked.url) return null;
+    if (!picked || !picked.url || picked.streamType !== 'hls') return null;
     const subtitles = pickSubtitlesFromHtml(lastBody, playerUrl);
-    let streamUrl = picked.url;
-    if (picked.streamType === 'mp4') {
-      streamUrl = await resolveRedirect(streamUrl, {
-        'User-Agent': USER_AGENT,
-        Referer: playerUrl,
-        Origin: KRUSS_ORIGIN,
-        Range: 'bytes=0-1',
-      });
-    }
-    const inspection =
-      picked.streamType === 'hls' ? await inspectMaster(streamUrl) : { languages: [] };
-    if (picked.streamType === 'hls' && !inspection) return null;
+    const streamUrl = picked.url;
+    const inspection = await inspectMaster(streamUrl);
+    if (!inspection) return null;
     const languages = (inspection && inspection.languages) || [];
     return {
       url: streamUrl,
-      streamType: picked.streamType,
+      streamType: 'hls',
       headers: Object.assign({}, HLS_HEADERS),
       subtitles: subtitles,
       audioLanguages: languages.map(function (item) {
@@ -1232,7 +1199,7 @@
         for (let s = 0; s < collected.length; s += 1) {
           if (Date.now() >= deadline) break;
           const server = collected[s];
-          if (server.dash) continue;
+          if (server.dash || /\bbirdstream\b/i.test(String(server.name || ''))) continue;
           const embed = await resolveEmbedStream(server.src, wantDub);
           if (!embed || !embed.url) continue;
           const knownAudio = embed.audioLanguages && embed.audioLanguages.length > 0;

@@ -47,11 +47,11 @@ const USER_AGENT =
 // Prefer VidPlay first: current native probes show its nekostream route serves
 // normal media segments, while the VidCloud route can expose image-only paths.
 const SERVER_PRIORITY = {
-  sub: ['vidplay', 'vidtube', 'vidcloud', 'vidwish', 'hd', 'vidstream', 'megaplay', 'vibe', 'kiwi'],
+  sub: ['vidplay', 'vidtube', 'vidcloud', 'vidwish', 'hd', 'vidstream', 'megaplay'],
   // MegaPlay/Vidstream remain later fallbacks because their tickets often fail
   // in native playback even when the master playlist is reachable.
-  dub: ['vidplay', 'vidtube', 'vidcloud', 'vidwish', 'hd', 'vidstream', 'megaplay', 'vibe', 'kiwi'],
-  hsub: ['vidplay', 'vidtube', 'vidcloud', 'vidwish', 'hd', 'vidstream', 'megaplay', 'vibe', 'kiwi'],
+  dub: ['vidplay', 'vidtube', 'vidcloud', 'vidwish', 'hd', 'vidstream', 'megaplay'],
+  hsub: ['vidplay', 'vidtube', 'vidcloud', 'vidwish', 'hd', 'vidstream', 'megaplay'],
 };
 const BLOCKED_STREAM_HOSTS = ['cdn.mewstream.buzz', 'mewstream.buzz', 'vibeplayer.site'];
 const PLAYER_HOSTS = [
@@ -626,9 +626,11 @@ function parseServersFromHtml(html, lang) {
   const regex = /<li[^>]*data-link-id="([^"]+)"[^>]*>([^<]+)</gi;
   let match;
   while ((match = regex.exec(block)) !== null) {
+    const name = decodeHtml(match[2] || '').trim();
+    if (/^(?:vibe|kiwi)\b/i.test(name)) continue;
     servers.push({
       linkId: String(match[1] || '').trim(),
-      name: decodeHtml(match[2] || '').trim(),
+      name: name,
     });
   }
   return servers;
@@ -1016,13 +1018,13 @@ async function probeHlsPlayback(url, headers, options) {
 function directMediaFromPlayerUrl(playerUrl) {
   const url = String(playerUrl || '').trim();
   if (!url) return '';
-  if (/\.m3u8(\?|$)|\.mp4(\?|$)/i.test(url)) return url;
+  if (/\.m3u8(\?|$)/i.test(url)) return url;
   if (url.indexOf('#') !== -1) {
     const fragment = url.split('#')[1].replace(/#+$/, '').trim();
     if (!fragment) return '';
-    if (/^https?:\/\//i.test(fragment)) return fragment;
+    if (/^https?:\/\//i.test(fragment)) return /\.mp4(?:[?#&]|$)/i.test(fragment) ? '' : fragment;
     const decoded = decodeBase64Url(fragment);
-    if (/^https?:\/\//i.test(decoded)) return decoded;
+    if (/^https?:\/\//i.test(decoded)) return /\.mp4(?:[?#&]|$)/i.test(decoded) ? '' : decoded;
   }
   return '';
 }
@@ -1043,6 +1045,16 @@ function playerConfigForUrl(playerUrl) {
   return null;
 }
 
+function isNonHlsMp4Source(url, item) {
+  if (/\.mp4(?:[?#&]|$)/i.test(String(url || ''))) return true;
+  if (item && typeof item === 'object') {
+    if (item.isM3U8 === false) return true;
+    const kind = String(item.streamType || item.type || item.format || '').toLowerCase();
+    if (kind === 'mp4' || kind === 'video/mp4') return true;
+  }
+  return false;
+}
+
 function normalizeSourceEntries(sourceData) {
   const streams = [];
   if (!sourceData) return streams;
@@ -1053,7 +1065,8 @@ function normalizeSourceEntries(sourceData) {
   if (!raw) return streams;
 
   if (typeof raw === 'string' && raw.trim()) {
-    streams.push({ quality: 'Auto', url: raw.trim() });
+    const url = raw.trim();
+    if (!isNonHlsMp4Source(url)) streams.push({ quality: 'Auto', url });
     return streams;
   }
 
@@ -1061,7 +1074,7 @@ function normalizeSourceEntries(sourceData) {
     for (let i = 0; i < raw.length; i += 1) {
       const item = raw[i] || {};
       const url = String(item.file || item.url || '').trim();
-      if (!url) continue;
+      if (!url || isNonHlsMp4Source(url, item)) continue;
       streams.push({
         quality: String(item.label || item.quality || item.type || 'Auto').trim() || 'Auto',
         url,
@@ -1072,7 +1085,7 @@ function normalizeSourceEntries(sourceData) {
 
   if (typeof raw === 'object') {
     const url = String(raw.file || raw.url || '').trim();
-    if (url) {
+    if (url && !isNonHlsMp4Source(url, raw)) {
       streams.push({
         quality: String(raw.label || raw.quality || 'Auto').trim() || 'Auto',
         url,
@@ -1441,12 +1454,7 @@ async function extractStreamFromServer(base, watchUrl, server, lang, options) {
   let playerKey = '';
   if (opts.seenPlayers) {
     playerKey = targetLang + '|url:' + playerUrl;
-    // Only identical embed requests may share a result before metadata verification.
     if (opts.seenPlayers[playerKey]) {
-      // Same file behind another server name: reuse the resolved result so the
-      // picker still lists the alternative without a second probe.
-      const known = opts.playerResults && opts.playerResults[playerKey];
-      if (known) return Object.assign({}, known, { server: server.name, duplicate: true });
       throw new Error('Duplicate player route');
     }
     opts.seenPlayers[playerKey] = true;
@@ -1564,7 +1572,6 @@ async function extractStreamFromServer(base, watchUrl, server, lang, options) {
     server: server.name,
     playerUrl: resolved.playerUrl,
   };
-  if (playerKey && opts.playerResults) opts.playerResults[playerKey] = result;
   return result;
 }
 
@@ -1856,9 +1863,9 @@ async function resolveStreamUrl(episodeHref, lang, alive) {
   const combinedStreams = [];
   const serverChoices = [];
   const seenStreamUrls = {};
+  const seenServerUrls = {};
   const seenPlayers = {};
   const probeMemo = {};
-  const playerResults = {};
   const primaryDeadline = Date.now() + 10000;
   function primaryAlive() { return (!alive || alive()) && Date.now() < primaryDeadline; }
   for (let i = 0; i < servers.length && primaryAlive(); i += 1) {
@@ -1868,10 +1875,15 @@ async function resolveStreamUrl(episodeHref, lang, alive) {
         context.watchUrl,
         servers[i],
         targetLang,
-        { subFingerprint: subFingerprint, seenPlayers: seenPlayers, playerResults: playerResults, alive: primaryAlive, probeMemo: probeMemo },
+        { subFingerprint: subFingerprint, seenPlayers: seenPlayers, alive: primaryAlive, probeMemo: probeMemo },
       ), Math.max(1, primaryDeadline - Date.now()), null);
       if (!result) break;
       const entries = Array.isArray(result.streams) ? result.streams : [];
+      if (result.url && seenServerUrls[result.url]) {
+        log('skipping duplicate server route ' + result.server);
+        continue;
+      }
+      if (result.url) seenServerUrls[result.url] = true;
       serverChoices.push({
         name: result.server,
         url: result.url,

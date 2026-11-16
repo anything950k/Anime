@@ -349,89 +349,73 @@
 
   async function validateStreamPlaybackUncached(streamUrl, headers, isM3u8, depth, active) {
     depth = depth || 0;
-    if (depth > 4 || (active && !active())) return false;
+    if (depth > 4 || !isM3u8 || (active && !active())) return false;
     try {
-      if (isM3u8) {
-        let playlistText = '';
-        if (typeof fetchv2 === 'function') {
-          const res = await fetchv2(streamUrl, headers, 'GET', null);
-          if (!res || (res.status !== 200 && res.status !== 206)) return false;
-          if (typeof res.text === 'function') playlistText = await res.text();
-          else if (typeof res.body === 'string') playlistText = res.body;
-        } else if (typeof fetch === 'function') {
-          const res = await fetch(streamUrl, { headers });
-          if (!res || !res.ok) return false;
-          playlistText = await res.text();
-        }
-        if (!playlistText || !playlistText.includes('#EXTM3U')) return false;
+      let playlistText = '';
+      if (typeof fetchv2 === 'function') {
+        const res = await fetchv2(streamUrl, headers, 'GET', null);
+        if (!res || (res.status !== 200 && res.status !== 206)) return false;
+        if (typeof res.text === 'function') playlistText = await res.text();
+        else if (typeof res.body === 'string') playlistText = res.body;
+      } else if (typeof fetch === 'function') {
+        const res = await fetch(streamUrl, { headers });
+        if (!res || !res.ok) return false;
+        playlistText = await res.text();
+      }
+      if (!playlistText || !playlistText.includes('#EXTM3U')) return false;
 
-        const lines = playlistText.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
-        let segmentOrVariantUrl = '';
-        for (let i = 0; i < lines.length; i += 1) {
-          const line = lines[i];
-          if (line.startsWith('#')) continue;
-          if (line.startsWith('http://') || line.startsWith('https://')) {
-            segmentOrVariantUrl = line;
-            break;
-          }
-          segmentOrVariantUrl = mediaUrl(line, streamUrl);
+      const lines = playlistText.split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+      let segmentOrVariantUrl = '';
+      for (let i = 0; i < lines.length; i += 1) {
+        const line = lines[i];
+        if (line.startsWith('#')) continue;
+        if (line.startsWith('http://') || line.startsWith('https://')) {
+          segmentOrVariantUrl = line;
           break;
         }
-        if (!segmentOrVariantUrl) return false;
-
-        if (segmentOrVariantUrl.includes('.m3u8')) {
-          return validateStreamPlayback(segmentOrVariantUrl, headers, true, depth + 1, active);
-        }
-
-        if (active && !active()) return false;
-
-        const probeHeaders = Object.assign({}, headers, { Range: 'bytes=0-4095' });
-        let probeRes = null;
-        if (typeof fetchv2 === 'function') {
-          probeRes = await fetchv2(segmentOrVariantUrl, probeHeaders, 'GET', null);
-        } else if (typeof fetch === 'function') {
-          probeRes = await fetch(segmentOrVariantUrl, { headers: probeHeaders });
-        }
-        if (!probeRes) return false;
-        const status = Number(probeRes.status || 0);
-        if (status !== 200 && status !== 206) return false;
-
-        let bodyText = '';
-        if (typeof probeRes.text === 'function') { try { bodyText = await probeRes.text(); } catch (_) {} }
-        else if (typeof probeRes.body === 'string') bodyText = probeRes.body;
-        if (bodyText && (bodyText.includes('"error"') || bodyText.includes('domain forbidden') || bodyText.includes('Website Access Blocked'))) {
-          return false;
-        }
-
-        // Classify by BYTES, never by label: the megaplay CDN serves genuine MPEG-TS
-        // under `.jpg`/image-jpeg segments (anti-detection). Byte evidence wins;
-        // content-type only rejects when the payload really looks like a web page.
-        const cType = String(probeRes.contentType || (probeRes.headers && (probeRes.headers['content-type'] || probeRes.headers['Content-Type'])) || '').toLowerCase();
-        const sample = bodyText ? bodyText.slice(0, 32) : '';
-        const tsSync = sample.length > 0 && sample.charCodeAt(0) === 0x47;
-        const fmp4 = /ftyp|styp|moof/.test(sample);
-        const htmlish = /<!doctype|<html|<head|<body/i.test(sample);
-        if (htmlish) return false;
-        if (tsSync || fmp4) return true;
-        if (cType.includes('text/html') || cType.includes('application/json')) return false;
-        if (!sample && cType.includes('image/')) return true; // disguised-segment class; the player does the final check
-        if (cType.includes('image/')) return false;           // readable bytes that really are an image
-        return true;
-      } else {
-        const probeHeaders = Object.assign({}, headers, { Range: 'bytes=0-4095' });
-        let probeRes = null;
-        if (typeof fetchv2 === 'function') {
-          probeRes = await fetchv2(streamUrl, probeHeaders, 'GET', null);
-        } else if (typeof fetch === 'function') {
-          probeRes = await fetch(streamUrl, { headers: probeHeaders });
-        }
-        if (!probeRes) return false;
-        const status = Number(probeRes.status || 0);
-        if (status !== 200 && status !== 206) return false;
-        const cType = String(probeRes.contentType || (probeRes.headers && (probeRes.headers['content-type'] || probeRes.headers['Content-Type'])) || '').toLowerCase();
-        if (cType.includes('text/html') || cType.includes('image/') || cType.includes('application/json')) return false;
-        return true;
+        segmentOrVariantUrl = mediaUrl(line, streamUrl);
+        break;
       }
+      if (!segmentOrVariantUrl) return false;
+
+      if (segmentOrVariantUrl.includes('.m3u8')) {
+        return validateStreamPlayback(segmentOrVariantUrl, headers, true, depth + 1, active);
+      }
+
+      if (active && !active()) return false;
+
+      const probeHeaders = Object.assign({}, headers, { Range: 'bytes=0-4095' });
+      let probeRes = null;
+      if (typeof fetchv2 === 'function') {
+        probeRes = await fetchv2(segmentOrVariantUrl, probeHeaders, 'GET', null);
+      } else if (typeof fetch === 'function') {
+        probeRes = await fetch(segmentOrVariantUrl, { headers: probeHeaders });
+      }
+      if (!probeRes) return false;
+      const status = Number(probeRes.status || 0);
+      if (status !== 200 && status !== 206) return false;
+
+      let bodyText = '';
+      if (typeof probeRes.text === 'function') { try { bodyText = await probeRes.text(); } catch (_) {} }
+      else if (typeof probeRes.body === 'string') bodyText = probeRes.body;
+      if (bodyText && (bodyText.includes('"error"') || bodyText.includes('domain forbidden') || bodyText.includes('Website Access Blocked'))) {
+        return false;
+      }
+
+      // Classify by BYTES, never by label: the megaplay CDN serves genuine MPEG-TS
+      // under `.jpg`/image-jpeg segments (anti-detection). Byte evidence wins;
+      // content-type only rejects when the payload really looks like a web page.
+      const cType = String(probeRes.contentType || (probeRes.headers && (probeRes.headers['content-type'] || probeRes.headers['Content-Type'])) || '').toLowerCase();
+      const sample = bodyText ? bodyText.slice(0, 32) : '';
+      const tsSync = sample.length > 0 && sample.charCodeAt(0) === 0x47;
+      const fmp4 = /ftyp|styp|moof/.test(sample);
+      const htmlish = /<!doctype|<html|<head|<body/i.test(sample);
+      if (htmlish) return false;
+      if (tsSync || fmp4) return true;
+      if (cType.includes('text/html') || cType.includes('application/json')) return false;
+      if (!sample && cType.includes('image/')) return true; // disguised-segment class; the player does the final check
+      if (cType.includes('image/')) return false;           // readable bytes that really are an image
+      return true;
     } catch (e) {
       log('validateStreamPlayback probe error: ' + (e && e.message ? e.message : String(e)));
       return false;
@@ -744,11 +728,11 @@ function safeJsonParse(text) {
         if (res.ok) pageHtml = await res.text();
       }
 
-      const realIdM = pageHtml.match(/data-realid=["']([^"']+)["']/i) || pageHtml.match(/data-id=["']([^"']+)["']/i);
-      const realId = realIdM ? realIdM[1] : '';
-      if (realId) {
-        const srcUrl = 'https://megaplay.buzz/stream/getSources?id=' + encodeURIComponent(realId);
-        const sJson = await cachedGetSources(realId, srcUrl);
+      const playerIdM = pageHtml.match(/data-id=["']([^"']+)["']/i);
+      const playerId = playerIdM ? playerIdM[1] : '';
+      if (playerId) {
+        const srcUrl = 'https://megaplay.buzz/stream/getSources?id=' + encodeURIComponent(playerId);
+        const sJson = await cachedGetSources(playerId, srcUrl);
         let file = (sJson && sJson.sources && sJson.sources[0] && sJson.sources[0].file) || (sJson && sJson.file);
         if ((!file || !String(file).startsWith('http')) && sJson && sJson.enc) {
           // The player host moved the stream descriptor into an encrypted `enc`
@@ -759,7 +743,7 @@ function safeJsonParse(text) {
             if (entries.length) file = entries[0];
           }
         }
-        if (file && String(file).startsWith('http')) {
+        if (file && String(file).startsWith('http') && !/\.mp4(?:[?#&]|$)/i.test(String(file))) {
           const streamHeaders = { 'User-Agent': USER_AGENT, 'Referer': 'https://megaplay.buzz/', 'Origin': 'https://megaplay.buzz' };
           return {
             url: file,
@@ -831,9 +815,8 @@ function safeJsonParse(text) {
 
     const targetLang = String(lang || 'sub').toLowerCase() === 'dub' ? 'dub' : 'sub';
 
-    // Try fallbacks only when a provider has no checked routes. Resolve its actual
-    // embed alternatives with two workers, retaining each route's own metadata.
-    const providers = ['wave', 'koto', 'megg', 'zen', 'neko', 'dib', 'kiwi'];
+    // Only keep live HLS provider; wave (502), megg (MP4-only), zen (empty), and neko/dib/kiwi (HTTP 400) are dead/unused.
+    const providers = ['koto'];
     const deadline = Date.now() + 22000;
     const remaining = () => Math.max(0, deadline - Date.now());
 
@@ -856,12 +839,14 @@ function safeJsonParse(text) {
         const candidates = [], seenEmbeds = {};
         function addEmbed(entry) {
           if (!entry) return;
+          const serverName = String(entry.server || entry.label || '').trim();
+          if (/\bvidplay\b/i.test(serverName)) return;
           const url = entry.embedUrl || entry.url;
           if (!/^https?:\/\//i.test(String(url || '')) || seenEmbeds[url]) return;
           if (entry.type === 'dub' && targetLang !== 'dub') return;
           if (/^(softsub|hardsub|sub)$/.test(entry.type || '') && targetLang === 'dub') return;
           seenEmbeds[url] = true;
-          candidates.push({ url: url, name: entry.server || entry.label || 'Server ' + (candidates.length + 1) });
+          candidates.push({ url: url, name: serverName || 'Server ' + (candidates.length + 1) });
         }
         (Array.isArray(data.embeds) ? data.embeds : []).forEach(addEmbed);
         (Array.isArray(data.sources) ? data.sources : []).filter((entry) => entry && entry.embedUrl).forEach(addEmbed);
@@ -872,18 +857,23 @@ function safeJsonParse(text) {
         });
         (Array.isArray(data.sources) ? data.sources : []).forEach(function (entry) {
           if (!entry || !entry.url) return;
+          const serverName = String(entry.server || entry.label || entry.quality || '').trim();
+          if (/\bvidplay\b/i.test(serverName)) return;
           if (entry.type === 'dub' && targetLang !== 'dub') return;
           if (/^(softsub|hardsub|sub)$/.test(entry.type || '') && targetLang === 'dub') return;
+          const declaredKind = String(entry.streamType || entry.type || entry.format || '').toLowerCase();
+          if (entry.isM3U8 === false || declaredKind === 'mp4') return;
           // Newer source payloads carry an opaque token instead of a URL; the site's own player
           // expands it through PUBLIC_PROXY_URL. Only http(s) URLs pass through untouched.
           var sourceUrl = String(entry.url);
+          if (/\.mp4(?:[?#&]|$)/i.test(sourceUrl)) return;
           if (!/^https?:\/\//i.test(sourceUrl)) {
             if (!/^[A-Za-z0-9_.\-]+$/.test(sourceUrl)) return;
             sourceUrl = PROXY_CDN.replace(/\/+$/, '') + '/' + sourceUrl;
           }
-          candidates.push({ url: sourceUrl, direct: true, isM3U8: entry.isM3U8 !== false,
+          candidates.push({ url: sourceUrl, direct: true, isM3U8: true,
             headers: Object.assign({ 'User-Agent': USER_AGENT, Referer: BASE_URL + '/', Origin: BASE_URL }, data.headers || {}, entry.headers || {}),
-            name: entry.server || entry.quality || 'Direct' });
+            name: serverName || 'Direct' });
         });
         let next = 0, closed = false;
         const routes = [];
@@ -895,11 +885,11 @@ function safeJsonParse(text) {
             const candidateActive = () => active() && !candidateClosed;
             async function resolveCandidate() {
               const resolved = candidate.direct ? candidate : await resolveEmbedUrl(candidate.url);
-              if (!resolved || !candidateActive()) return null;
-              const valid = await validateStreamPlayback(resolved.url, resolved.headers, resolved.isM3U8 !== false, 0, candidateActive);
+              if (!resolved || !resolved.url || resolved.isM3U8 === false || /\.mp4(?:[?#&]|$)/i.test(resolved.url) || !candidateActive()) return null;
+              const valid = await validateStreamPlayback(resolved.url, resolved.headers, true, 0, candidateActive);
               if (!valid || !candidateActive()) return null;
               return { name: candidate.name + ' (' + provider + ')', url: resolved.url, headers: resolved.headers,
-                streamType: resolved.isM3U8 !== false ? 'hls' : 'mp4', quality: (await qualityFromMaster(resolved.url, resolved.headers, candidateActive)) || 'Auto', lang: targetLang,
+                streamType: 'hls', quality: (await qualityFromMaster(resolved.url, resolved.headers, candidateActive)) || 'Auto', lang: targetLang,
                 subtitles: subtitleEntries(data, candidate.url), intro: intro, outro: outro,
                 introStartSeconds: intro ? intro.start : null, introEndSeconds: intro ? intro.end : null,
                 outroStartSeconds: outro ? outro.start : null, outroEndSeconds: outro ? outro.end : null };

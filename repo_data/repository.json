@@ -23,7 +23,7 @@
       "minAppVersion": "8.0.0",
       "packageUrl": "modules/AniKoto-5.0.6-beta.3.zip",
       "packagePath": "/kas021/Synthetiq-Modules/releases/download/module-anikoto-v4-v5.0.6-beta.3/AniKoto-5.0.6-beta.3.zip",
-      "sha256": "beba10a44fa76dcfb09b177f4d647ffa44a2ad27db93dda9c839a754bda9f78a",
+      "sha256": "b122567747bde7e3db5dafe76efc318698249dbeeede02e1c4d0fe51a11e6a4d",
       "signature": "YPoh+DzsFR1ZzU4rMFS/PH8Yh3TmYOaMQ/w98yobK9KEUPZa2bCmGSDBDJkcva45xe0HNkAvvXMvzFCECP7Rvg==",
       "publishedAtMs": 1784986932868,
       "changelog": [
@@ -41,7 +41,7 @@
         "language": "English Sub/Dub",
         "iconUrl": "https://raw.githubusercontent.com/kas021/Synthetiq-Modules/main/assets/module-icons/anikoto.png?v=20260812-2"
       },
-      "packageSizeBytes": 23100
+      "packageSizeBytes": 23130
     },
     {
       "moduleId": "anikage-v1",
@@ -53,7 +53,7 @@
       "minAppVersion": "8.0.0",
       "packageUrl": "modules/Anikage-1.1.3.zip",
       "packagePath": "/kas021/Synthetiq-Modules/releases/download/module-anikage-v1-v1.1.3/Anikage-1.1.3.zip",
-      "sha256": "70002c6570c46129d00e71c9cf623f7b44bc2ddea2cb559933b10ede1554fff4",
+      "sha256": "a35e95ed9486155d2c437e326791dd82b32cb0f90d4f8d93de7bd961772aef3f",
       "signature": "EStBFmUmBFNmytXdlODjSupvWRl/SPuLP6HT4Mzkz+fD/713AJUY3lGTgO79Y+1l/XbdgzmpUB9Sg6wno9Atvg==",
       "publishedAtMs": 1784986932868,
       "changelog": [
@@ -78,7 +78,7 @@
         "language": "English Sub/Dub",
         "iconUrl": "https://raw.githubusercontent.com/kas021/Synthetiq-Modules/main/assets/module-icons/anikage.png"
       },
-      "packageSizeBytes": 13122
+      "packageSizeBytes": 13143
     },
     {
       "moduleId": "miruro-v3",
@@ -120,7 +120,7 @@
       "minAppVersion": "8.0.0",
       "packageUrl": "modules/KickAssAnime-4.2.0.zip",
       "packagePath": "/kas021/Synthetiq-Modules/releases/download/module-kickassanime-v3-v4.2.0/KickAssAnime-4.2.0.zip",
-      "sha256": "4f31c3cd519a37ecf552e838f6d4e3b41fa72e8ab91f5489ff8c326b4bc8748f",
+      "sha256": "fa9eacd1b9338e26127964b2e13fc4ebce1b42e8599d1e0c2844d3ac017908af",
       "signature": "5oz9rtqX1VHYD4U5xHgXjV+pMoMG6qZcv9ACBwCHEkbTnfcxetM0037aCuUhR6X63P1cSpOHfLfaYbmtyYIlHA==",
       "publishedAtMs": 1784986932868,
       "changelog": [
@@ -140,7 +140,7 @@
         "language": "English Sub/Dub",
         "iconUrl": "https://raw.githubusercontent.com/kas021/Synthetiq-Modules/main/assets/module-icons/kickassanime.png?v=20261008-1"
       },
-      "packageSizeBytes": 15954
+      "packageSizeBytes": 15720
     },
     {
       "moduleId": "justanime-v1",
@@ -152,7 +152,7 @@
       "minAppVersion": "8.0.0",
       "packageUrl": "modules/JustAnime-1.0.1.zip",
       "packagePath": "/kas021/Synthetiq-Modules/releases/download/module-justanime-v1-v1.0.1/JustAnime-1.0.1.zip",
-      "sha256": "06003ab11823ac9862b18406bda358dbfdb46886e0dda1626a0d73aecfd2bb70",
+      "sha256": "553714175c676dc69cf54ab6485ba188cef8e9edc0cf6418951955d799f47f00",
       "signature": "5LLt2GgH1aG8bcWr76KRTGKiuBEUlPkh2KM4p8ZgmXxcE3ZK65uMnGrim+KAL5gm8f66L2g3ROuJAndFEnI3zA==",
       "publishedAtMs": 1784986932868,
       "changelog": [
@@ -169,7 +169,7 @@
         "language": "English Sub/Dub",
         "iconUrl": "https://raw.githubusercontent.com/kas021/Synthetiq-Modules/main/assets/module-icons/justanime.png"
       },
-      "packageSizeBytes": 5532
+      "packageSizeBytes": 5989
     }
   ],
   "defaultModules": {
