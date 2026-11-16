@@ -85,7 +85,16 @@ export const MediaDetailsModal: React.FC<MediaDetailsModalProps> = ({
 
         let targetId = item.id;
         if (searchRes.ok && Array.isArray(searchRes.result) && searchRes.result.length > 0) {
-          const match = searchRes.result[0];
+          const norm = (v: any) =>
+            String(v || '')
+              .toLowerCase()
+              .replace(/['’`]/g, '')
+              .replace(/[^a-z0-9]+/g, ' ')
+              .trim();
+          const targetNorm = norm(item.title || item.id);
+          const idMatch = searchRes.result.find((r: any) => (r.id || r.href || r.url) === item.id);
+          const exactTitleMatch = searchRes.result.find((r: any) => norm(r.title || r.name) === targetNorm);
+          const match = idMatch || exactTitleMatch || searchRes.result[0];
           targetId = match.id || match.href || match.url || item.id;
           setSeriesId(targetId);
         }

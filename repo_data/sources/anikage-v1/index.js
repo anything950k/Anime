@@ -171,23 +171,76 @@
 
   // ---------- search ----------
 
+  function normalizeTitleKey(value) {
+    return String(value || '')
+      .toLowerCase()
+      .replace(/['’`]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
+  function scoreTitleMatch(queryNorm, item) {
+    if (!queryNorm) return 0;
+    const titleObj = item && item.title && typeof item.title === 'object' ? item.title : null;
+    const candidates = titleObj
+      ? [titleObj.english, titleObj.userPreferred, titleObj.romaji, titleObj.native]
+      : [item && item.title];
+    const qCompact = queryNorm.replace(/\s+/g, '');
+    const qTokens = queryNorm.split(/\s+/).filter(Boolean);
+    let best = 0;
+    for (let i = 0; i < candidates.length; i += 1) {
+      const norm = normalizeTitleKey(candidates[i]);
+      if (!norm) continue;
+      const compact = norm.replace(/\s+/g, '');
+      if (norm === queryNorm || compact === qCompact) {
+        best = Math.max(best, 1000);
+        continue;
+      }
+      const tokens = norm.split(/\s+/).filter(Boolean);
+      let matched = 0;
+      for (let j = 0; j < qTokens.length; j += 1) {
+        if (tokens.indexOf(qTokens[j]) !== -1) matched += 1;
+      }
+      if (qTokens.length > 0 && matched === qTokens.length) {
+        const extraTokens = Math.max(0, tokens.length - qTokens.length);
+        let score = 700 - extraTokens * 25;
+        if (norm.indexOf(queryNorm) === 0) score += 100;
+        best = Math.max(best, score);
+      } else if (matched > 0) {
+        best = Math.max(best, Math.round((matched / qTokens.length) * 300) - Math.abs(tokens.length - qTokens.length) * 10);
+      }
+    }
+    return best;
+  }
+
   async function searchResults(query) {
     const q = String(query || '').trim();
     const url = BASE_URL + '/api/media/anime/browse?' + (q ? 'q=' + encodeURIComponent(q) : 'sort=TRENDING_DESC');
     const data = await requestJson(url);
     const results = (data && data.data) || [];
+    const queryNorm = normalizeTitleKey(q);
 
-    return results.map((item) => {
+    const mapped = results.map((item, idx) => {
       const title = formatTitle(item.title, item.slug);
       const poster = formatImage(item.coverImage);
       return {
-        id: item.slug,
-        href: BASE_URL + '/anime/info/' + item.slug,
-        title: title,
-        image: poster,
-        poster: poster,
+        idx: idx,
+        score: queryNorm ? scoreTitleMatch(queryNorm, item) : 0,
+        entry: {
+          id: item.slug,
+          href: BASE_URL + '/anime/info/' + item.slug,
+          title: title,
+          image: poster,
+          poster: poster,
+        },
       };
     });
+
+    if (queryNorm) {
+      mapped.sort((a, b) => (b.score - a.score) || (a.idx - b.idx));
+    }
+
+    return mapped.map((m) => m.entry);
   }
 
   // ---------- details ----------
